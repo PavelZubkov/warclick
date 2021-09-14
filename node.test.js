@@ -4997,6 +4997,7 @@ var $;
             }, 50);
             if (health <= 0) {
                 $.$mol_fiber_defer(() => this.closed(true));
+                new $.$mol_after_timeout(10_000, () => this.domain().game_current(this.domain().game($.$mol_guid())));
             }
             return health;
         }
@@ -5017,9 +5018,6 @@ var $;
             return Boolean(this.state().sub('started').value(next) ?? false);
         }
         closed(next) {
-            if (next === true) {
-                this.domain().game_current(this.domain().game($.$mol_guid()));
-            }
             return Boolean(this.state().sub('closed').value(next) ?? false);
         }
         player_team(player) {
@@ -6244,6 +6242,7 @@ var $;
             return [
                 this.List(),
                 this.Desc(),
+                this.Status_zone(),
                 this.Game()
             ];
         }
@@ -6327,6 +6326,23 @@ var $;
             ];
             return obj;
         }
+        game_status() {
+            return "";
+        }
+        Status() {
+            const obj = new this.$.$mol_view();
+            obj.sub = () => [
+                this.game_status()
+            ];
+            return obj;
+        }
+        Status_zone() {
+            const obj = new this.$.$mol_row();
+            obj.sub = () => [
+                this.Status()
+            ];
+            return obj;
+        }
         ally_attack(val) {
             if (val !== undefined)
                 return val;
@@ -6376,23 +6392,6 @@ var $;
                 this.Ally(),
                 this.Ally_label(),
                 this.Ally_team()
-            ];
-            return obj;
-        }
-        status() {
-            return "";
-        }
-        Status() {
-            const obj = new this.$.$mol_view();
-            obj.sub = () => [
-                this.status()
-            ];
-            return obj;
-        }
-        Status_zone() {
-            const obj = new this.$.$mol_list();
-            obj.rows = () => [
-                this.Status()
             ];
             return obj;
         }
@@ -6449,7 +6448,6 @@ var $;
             const obj = new this.$.$mol_row();
             obj.sub = () => [
                 this.Allies_zone(),
-                this.Status_zone(),
                 this.Enemy_zone()
             ];
             return obj;
@@ -6490,6 +6488,12 @@ var $;
     ], $my_warclick.prototype, "Desc", null);
     __decorate([
         $.$mol_mem
+    ], $my_warclick.prototype, "Status", null);
+    __decorate([
+        $.$mol_mem
+    ], $my_warclick.prototype, "Status_zone", null);
+    __decorate([
+        $.$mol_mem
     ], $my_warclick.prototype, "ally_attack", null);
     __decorate([
         $.$mol_mem
@@ -6506,12 +6510,6 @@ var $;
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "Allies_zone", null);
-    __decorate([
-        $.$mol_mem
-    ], $my_warclick.prototype, "Status", null);
-    __decorate([
-        $.$mol_mem
-    ], $my_warclick.prototype, "Status_zone", null);
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "enemy_attack", null);
@@ -6540,7 +6538,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $.$mol_style_attach("my/warclick/warclick.view.css", "[my_warclick_ally],\n[my_warclick_enemy] {\n\tdisplay: inline-flex;\n\talign-items: center;\n\tjustify-content: center;\n\tborder-radius: 50%;\n\twidth: 10rem;\n\theight: 10rem;\n\tfont-size: 4rem;\n\tfont-weight: bold;\n}\n\n[my_warclick_ally],\n[my_warclick_ally]:hover,\n[my_warclick_ally]:focus {\n\tbackground-color: green;\n}\n\n[my_warclick_enemy],\n[my_warclick_enemy]:hover,\n[my_warclick_enemy]:focus {\n\tbackground-color: red;\n}\n\n[my_warclick_list] {\n\talign-items: center;\n}\n\n[my_warclick_desc] {\n\tpadding: var(--mol_gap_text);\n}\n\n");
+    $.$mol_style_attach("my/warclick/warclick.view.css", "[my_warclick_ally],\n[my_warclick_enemy] {\n\tdisplay: inline-flex;\n\talign-items: center;\n\tjustify-content: center;\n\tborder-radius: 50%;\n\twidth: 10rem;\n\theight: 10rem;\n\tfont-size: 4rem;\n\tfont-weight: bold;\n}\n\n[my_warclick_ally],\n[my_warclick_ally]:hover,\n[my_warclick_ally]:focus {\n\tbackground-color: green;\n}\n\n[my_warclick_enemy],\n[my_warclick_enemy]:hover,\n[my_warclick_enemy]:focus {\n\tbackground-color: red;\n}\n\n[my_warclick_list] {\n\talign-items: center;\n}\n\n[my_warclick_desc] {\n\tpadding: var(--mol_gap_text);\n}\n\n[my_warclick_game] {\n\tjustify-content: space-between;\n}\n\n[my_warclick_status_zone] {\n\tjustify-content: center;\n\tfont-family: monospace;\n}\n");
 })($ || ($ = {}));
 //warclick.view.css.js.map
 ;
@@ -6623,7 +6621,10 @@ var $;
                     return this.msg_waiting_players();
                 if (this.game().started() && !this.game_closed())
                     return this.msg_fighting();
-                return this.game_leader() === $.$my_warclick_game_team.ally ? this.msg_ally_win() : this.msg_enemy_win();
+                return this.game_leader() === $.$my_warclick_game_team.ally
+                    ? this.team() === $.$my_warclick_game_team.ally
+                        ? this.msg_ally_win() : this.msg_enemy_win()
+                    : this.msg_enemy_win();
             }
         }
         __decorate([

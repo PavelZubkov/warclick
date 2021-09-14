@@ -1772,6 +1772,9 @@ declare namespace $ {
         List(): $mol_row;
         instruction(): string;
         Desc(): $mol_view;
+        game_status(): string;
+        Status(): $mol_view;
+        Status_zone(): $mol_row;
         ally_attack(val?: any): any;
         ally_health(): string;
         attack_enabled(): any;
@@ -1782,9 +1785,6 @@ declare namespace $ {
         Ally_team_list(): $$.$mol_list;
         Ally_team(): $mol_view;
         Allies_zone(): $$.$mol_list;
-        status(): string;
-        Status(): $mol_view;
-        Status_zone(): $$.$mol_list;
         enemy_attack(val?: any): any;
         enemy_health(): string;
         Enemy(): $mol_button_major;
