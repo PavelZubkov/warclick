@@ -37,6 +37,7 @@ namespace $ {
 			} , 50 )
 			if ( health <= 0 ) {
 				$mol_fiber_defer( () => this.closed( true ) )
+				new $mol_after_timeout(10_000 , () => this.domain().game_current( this.domain().game( $mol_guid() ) ) )
 			}
 			return health
 		}
@@ -62,9 +63,6 @@ namespace $ {
 		}
 		
 		closed( next?: boolean ) {
-			if ( next === true ) {
-				this.domain().game_current( this.domain().game( $mol_guid() ) )
-			}
 			return Boolean( this.state().sub( 'closed' ).value( next ) ?? false )
 		}
 		

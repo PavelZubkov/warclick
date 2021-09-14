@@ -100,7 +100,10 @@ namespace $.$$ {
 		game_status() {
 			if ( !this.game_started() && !this.game_closed() ) return this.msg_waiting_players()
 			if ( this.game().started() && !this.game_closed() ) return this.msg_fighting()
-			return this.game_leader() === $my_warclick_game_team.ally ? this.msg_ally_win() : this.msg_enemy_win()
+			return this.game_leader() === $my_warclick_game_team.ally
+				? this.team() === $my_warclick_game_team.ally
+					? this.msg_ally_win() : this.msg_enemy_win()
+				: this.msg_enemy_win()
 		}
 
 	} 

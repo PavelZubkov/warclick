@@ -30,3 +30,11 @@
 	padding: var(--mol_gap_text);
 }
 
+[my_warclick_game] {
+	justify-content: space-between;
+}
+
+[my_warclick_status_zone] {
+	justify-content: center;
+	font-family: monospace;
+}

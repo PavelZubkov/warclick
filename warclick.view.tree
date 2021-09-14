@@ -27,6 +27,9 @@ $my_warclick $mol_list
 					title @ \leave
 					enabled <= leave_enabled null
 		<= Desc $mol_view sub / <= instruction @ \Click on a circle of enemies to deal damage, on your own to heal. You will lose when you have 0 health left. To start, each team must have at least one player.
+		<= Status_zone $mol_row
+			sub /
+				<= Status $mol_view sub / <= game_status \
 		<= Game $mol_row
 			sub /
 				<= Allies_zone $mol_list
@@ -40,9 +43,6 @@ $my_warclick $mol_list
 							sub /
 								<= Ally_team_list $mol_list
 									rows <= ally_team_list /
-				<= Status_zone $mol_list
-					rows /
-						<= Status $mol_view sub / <= status \
 				<= Enemy_zone $mol_list
 					rows /
 						<= Enemy $mol_button_major
