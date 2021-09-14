@@ -11,19 +11,19 @@ namespace $.$$ {
 		}
 		
 		health_red() {
-			return String( this.game().health_red() )
+			return String( this.game().health('red') )
 		}
 		
 		health_blue() {
-			return String( this.game().health_blue() )
+			return String( this.game().health('blue') )
 		}
 		
 		attack_red() {
-			this.game().attack_red( this.user() )
+			this.game().attack( this.user() , 'red' )
 		}
 		
 		attack_blue() {
-			this.game().attack_blue( this.user() )
+			this.game().attack( this.user() , 'blue' )
 		}
 		
 		attack_enabled() {
@@ -51,7 +51,8 @@ namespace $.$$ {
 			const players = this.game().players().map( id => this.domain().person( id ) )
 			const red = players.filter( p => p.team() === 'red' )
 			const Players = red.map( p => this.Player( p.id() ) )
-			return [ this.Team_red_title() , ... Players ]
+			const label = this.user().team() === 'blue' ? this.Team_enemy_label() : this.Team_allies_label()
+			return [ this.Team_red_title() , label , ... Players ].filter(Boolean)
 		}
 		
 		@ $mol_mem
@@ -59,7 +60,8 @@ namespace $.$$ {
 			const players = this.game().players().map( id => this.domain().person( id ) )
 			const blue = players.filter( p => p.team() === 'blue' )
 			const Players = blue.map( p => this.Player( p.id() ) )
-			return [ this.Team_blue_title() , ... Players ]
+			const label = this.user().team() === 'red' ? this.Team_enemy_label() : this.Team_allies_label()
+			return [ this.Team_blue_title() , label , ... Players ].filter(Boolean)
 		}
 		
 		join() {
@@ -91,9 +93,14 @@ namespace $.$$ {
 		}
 		
 		status() {
-			if ( this.game().closed() ) return 'Waiting player(s)'
+			if ( this.game().closed() ) return 'Waiting for the players to join'
 			if ( this.game().started() ) return 'Fighting'
-			return 'Waiting player(s)'
+			return 'Waiting for the players to join'
+		}
+
+		@ $mol_mem_key
+		player_score( id : string ) {
+			return String( this.game().player_score( this.domain().person( id ) ) )
 		}
 		
 	} 

@@ -1,5 +1,6 @@
 namespace $ {
 	
+	export type $my_warclick_game_action = { player: string , damage: -1 | 1 , to: 'red' | 'blue'  }
 	export class $my_warclick_game extends $mol_object2 {
 		
 		id(): string {
@@ -15,12 +16,32 @@ namespace $ {
 			return this.domain().state().doc( 'person' ).doc( this.id() )
 		}
 		
-		health_red( next?: number ) {
-			return Number( this.state().sub( 'health_self' ).value( next ) ?? 50 )
+		actions( next?: $my_warclick_game_action[] ) {
+			return ( this.state().sub( 'actions' ).list( next ) ?? [] ) as $my_warclick_game_action[]
 		}
 		
-		health_blue( next?: number ) {
-			return Number( this.state().sub( 'health_enemy' ).value( next ) ?? 50 )
+		action( player : $my_warclick_person , to: 'red' | 'blue' , damage: -1 | 1 ) {
+			const actions = this.actions()
+			this.actions( [ ... actions , { player : player.id() , to , damage } ] )
+		}
+		
+		health( team: 'red' | 'blue' ) {
+			const actions = this.actions().filter( a => a.to === team )
+			const health = actions.reduce( ( sum , a ) => {
+				return sum + a.damage
+			} , 50 )
+			if ( health <= 0 ) {
+				$mol_fiber_defer( () => this.closed( true ) )
+			}
+			return health
+		}
+		
+		player_score( player : $my_warclick_person ) {
+			const actions = this.actions().filter( a => a.player === player.id() )
+			const score = actions.reduce( ( sum , a ) => {
+				return sum + Math.abs( a.damage )
+			} , 0 )
+			return score
 		}
 		
 		players( next?: string[] ) {
@@ -43,18 +64,18 @@ namespace $ {
 			return this.players().map( id => this.domain().person( id ) ).filter( p => p.team() === team )
 		}
 		
-		join( person : $my_warclick_person ) {
-			person.online_update()
+		join( player : $my_warclick_person ) {
+			player.online_update()
 			if ( this.closed() ) return
 
 			const ids = new Set( this.players() )
 			const blue_count = this.players_team( 'blue' )
 			const red_count = this.players_team( 'red' )
 
-			if ( red_count > blue_count ) person.team('blue')
-			else person.team('red')
+			if ( red_count > blue_count ) player.team('blue')
+			else player.team('red')
 
-			ids.add( person.id() )
+			ids.add( player.id() )
 			const next = [ ...ids.values() ]
 			this.players( next )
 			
@@ -63,11 +84,11 @@ namespace $ {
 			}
 		}
 		
-		leave( person : $my_warclick_person ) {
+		leave( player : $my_warclick_person ) {
 			if ( this.closed() ) return
 
 			const ids = new Set( this.players() )
-			ids.delete( person.id() )
+			ids.delete( player.id() )
 			this.players( [ ...ids.values() ] )
 			
 			if ( !this.players_team( 'red' ).length || !this.players_team( 'blue' ) ) {
@@ -75,9 +96,9 @@ namespace $ {
 			}
 		}
 		
-		leader(): 'red' | 'blue' | 'nothing' {
-			const health_red = this.health_red()
-			const health_blue = this.health_blue()
+		leader(): 'red' | 'blue' | 'equal' {
+			const health_red = this.health('red')
+			const health_blue = this.health('blue')
 			const players_red = this.players_team( 'red' )
 			const players_blue = this.players_team( 'blue' )
 
@@ -86,7 +107,7 @@ namespace $ {
 			if ( health_red > health_blue ) return 'red'
 			if ( health_red < health_blue ) return 'blue'
 			
-			return 'nothing'
+			return 'equal'
 		}
 		
 		kick_inactive() {
@@ -96,40 +117,14 @@ namespace $ {
 			}
 		}
 		
-		attack_red( person : $my_warclick_person ) {
-			person.online_update()
+		attack( player : $my_warclick_person , to : 'red' | 'blue') {
+			player.online_update()
 			// this.kick_inactive()
 			if ( this.closed() ) return
 			if ( !this.started() ) return
-
-			const current = this.health_red()
-			
-			const damage = person.team() === 'red' ? 1 : -1
-			this.health_red( this.health_red() + damage )
-			
-			if ( current < 1 ) {
-				return this.closed( true )
-			}
-		}
-		
-		attack_blue( person : $my_warclick_person ) {
-			person.online_update()
-			// this.kick_inactive()
-			if ( this.closed() ) return
-			if ( !this.started() ) return
-
-			const current = this.health_blue()
-			
-			if ( current < 1 ) {
-				return this.closed( true )
-			}
-
-			const damage = person.team() === 'blue' ? 1 : -1
-			this.health_blue( this.health_blue() + damage )
-			
-			if ( current < 1 ) {
-				return this.closed( true )
-			}
+				
+			if ( player.team() === to ) this.action( player , to , 1 )
+			else this.action( player , to , -1 )
 		}
 		
 		player_joined( person : $my_warclick_person ) {
