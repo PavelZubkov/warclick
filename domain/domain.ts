@@ -5,7 +5,7 @@ namespace $ {
 		@ $mol_mem
 		state() {
 			const state =  new this.$.$mol_state_shared
-			state.server = $mol_const('ws://localhost:3000')
+			// state.server = $mol_const('ws://localhost:3000')
 			return state
 		}
 		
