@@ -1,0 +1,29 @@
+[my_warclick_red],
+[my_warclick_blue] {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	width: 10rem;
+	height: 10rem;
+	font-size: 4rem;
+	font-weight: bold;
+}
+
+[my_warclick_red],
+[my_warclick_red]:hover,
+[my_warclick_red]:focus {
+	background-color: red;
+}
+
+[my_warclick_blue],
+[my_warclick_blue]:hover,
+[my_warclick_blue]:focus {
+	background-color: blue;
+}
+
+[my_warclick_list] {
+	align-items: center;
+}
+
+

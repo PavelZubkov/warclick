@@ -1,0 +1,47 @@
+$my_warclick $mol_list
+	domain $my_warclick_domain
+	title @ \W@rclick
+	Player!id $mol_view
+		sub / <= player_name!id \
+	Team_red_title $mol_view sub / \Red
+	Team_blue_title $mol_view sub / \Blue
+	sub /
+		<= List $mol_row
+			sub /
+				<= Guide $mol_view sub / \Enter name and click join
+				<= Person_name $mol_string
+					value?val <=> name?val \
+					hint <= name_hint @ \Player name
+				<= Join $mol_button_major
+					click?val <=> join?val null
+					title \join
+					enabled <= join_enabled null
+				<= Leave $mol_button_major
+					click?val <=> leave?val null
+					title \leave
+					enabled <= leave_enabled null
+		<= Game $mol_row
+			sub /
+				<= Red_zone $mol_list
+					rows /
+						<= Red $mol_button_major
+							click?val <=> attack_red?val null
+							title <= health_red \
+							enabled <= attack_enabled null
+						<= Team_red $mol_view
+							sub /
+								<= Team_red_list $mol_list
+									rows <= team_red_list /
+				<= Status_zone $mol_list
+					rows /
+						<= status \
+				<= Blue_zone $mol_list
+					rows /
+						<= Blue $mol_button_major
+							click?val <=> attack_blue?val null
+							title <= health_blue \
+							enabled <= attack_enabled
+						<= Team_blue $mol_view
+							sub /
+								<= Team_blue_list $mol_list
+									rows <= team_blue_list /
