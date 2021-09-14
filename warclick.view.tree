@@ -20,6 +20,8 @@ $my_warclick $mol_list
 					click?val <=> leave?val null
 					title \leave
 					enabled <= leave_enabled null
+		<= Description $mol_row
+			sub / \Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left
 		<= Game $mol_row
 			sub /
 				<= Red_zone $mol_list
