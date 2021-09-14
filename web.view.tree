@@ -87,12 +87,17 @@ $mol_row $mol_view
 
 $my_warclick $mol_list
 	domain $my_warclick_domain
-	title @ \W@rclick
+	title @ \Warclick
 	Player!id $mol_view
-		sub / <= player_name!id \
+		sub /
+			<= player_name!id \
+			\ - 
+			<= player_score!id \
 	Team_red_title $mol_view sub / \Red
 	Team_blue_title $mol_view sub / \Blue
-	sub /
+	Team_enemy_label $mol_view sub / \(enemy)
+	Team_allies_label $mol_view sub / \(allies)
+	rows /
 		<= List $mol_row
 			sub /
 				<= Guide $mol_view sub / \Enter name and click join
@@ -108,7 +113,8 @@ $my_warclick $mol_list
 					title \leave
 					enabled <= leave_enabled null
 		<= Description $mol_row
-			sub / \Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left
+			sub /
+				<= Des1 $mol_view sub / \Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left. To begin, each team must have at least one player
 		<= Game $mol_row
 			sub /
 				<= Red_zone $mol_list
@@ -123,7 +129,7 @@ $my_warclick $mol_list
 									rows <= team_red_list /
 				<= Status_zone $mol_list
 					rows /
-						<= status \
+						<= Status $mol_view sub / <= status \
 				<= Blue_zone $mol_list
 					rows /
 						<= Blue $mol_button_major

@@ -1079,10 +1079,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    function $mol_guid(length?: number, exists?: (id: string) => boolean): string;
-}
-
-declare namespace $ {
     class $mol_time_base {
         static patterns: Record<string, (arg: any) => string>;
         static formatter(pattern: string): (arg: any) => string;
@@ -1223,22 +1219,32 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    function $mol_guid(length?: number, exists?: (id: string) => boolean): string;
+}
+
+declare namespace $ {
+    type $my_warclick_game_action = {
+        player: string;
+        damage: -1 | 1;
+        to: 'red' | 'blue';
+    };
     class $my_warclick_game extends $mol_object2 {
         id(): string;
         domain(): $my_warclick_domain;
         state(): $mol_state_shared;
-        health_red(next?: number): number;
-        health_blue(next?: number): number;
+        actions(next?: $my_warclick_game_action[]): $my_warclick_game_action[];
+        action(player: $my_warclick_person, to: 'red' | 'blue', damage: -1 | 1): void;
+        health(team: 'red' | 'blue'): number;
+        player_score(player: $my_warclick_person): number;
         players(next?: string[]): string[];
         started(next?: boolean): boolean;
         closed(next?: boolean): boolean;
         players_team(team: 'red' | 'blue'): $my_warclick_person[];
-        join(person: $my_warclick_person): void;
-        leave(person: $my_warclick_person): void;
-        leader(): 'red' | 'blue' | 'nothing';
+        join(player: $my_warclick_person): void;
+        leave(player: $my_warclick_person): void;
+        leader(): 'red' | 'blue' | 'equal';
         kick_inactive(): void;
-        attack_red(person: $my_warclick_person): boolean | undefined;
-        attack_blue(person: $my_warclick_person): boolean | undefined;
+        attack(player: $my_warclick_person, to: 'red' | 'blue'): void;
         player_joined(person: $my_warclick_person): boolean;
     }
 }
@@ -1736,8 +1742,11 @@ declare namespace $ {
         Player(id: any): $mol_view;
         Team_red_title(): $mol_view;
         Team_blue_title(): $mol_view;
-        sub(): readonly any[];
+        Team_enemy_label(): $mol_view;
+        Team_allies_label(): $mol_view;
+        rows(): readonly any[];
         player_name(id: any): string;
+        player_score(id: any): string;
         Guide(): $mol_view;
         name(val?: any): string;
         name_hint(): string;
@@ -1749,6 +1758,7 @@ declare namespace $ {
         leave_enabled(): any;
         Leave(): $mol_button_major;
         List(): $mol_row;
+        Des1(): $mol_view;
         Description(): $mol_row;
         attack_red(val?: any): any;
         health_red(): string;
@@ -1759,6 +1769,7 @@ declare namespace $ {
         Team_red(): $mol_view;
         Red_zone(): $$.$mol_list;
         status(): string;
+        Status(): $mol_view;
         Status_zone(): $$.$mol_list;
         attack_blue(val?: any): any;
         health_blue(): string;
@@ -1794,8 +1805,9 @@ declare namespace $.$$ {
         leave_enabled(): boolean;
         game_started(): boolean;
         game_closed(): boolean;
-        leader(): "red" | "blue" | "nothing";
-        status(): "Waiting player(s)" | "Fighting";
+        leader(): "red" | "blue" | "equal";
+        status(): "Waiting for the players to join" | "Fighting";
+        player_score(id: string): string;
     }
 }
 

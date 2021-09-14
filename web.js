@@ -4068,21 +4068,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    function $mol_guid(length = 8, exists = () => false) {
-        for (;;) {
-            let id = Math.random().toString(36).substring(2, length + 2).toUpperCase();
-            if (exists(id))
-                continue;
-            return id;
-        }
-    }
-    $.$mol_guid = $mol_guid;
-})($ || ($ = {}));
-//guid.js.map
-;
-"use strict";
-var $;
-(function ($) {
     class $mol_time_base {
         static patterns = {};
         static formatter(pattern) {
@@ -4722,6 +4707,21 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    function $mol_guid(length = 8, exists = () => false) {
+        for (;;) {
+            let id = Math.random().toString(36).substring(2, length + 2).toUpperCase();
+            if (exists(id))
+                continue;
+            return id;
+        }
+    }
+    $.$mol_guid = $mol_guid;
+})($ || ($ = {}));
+//guid.js.map
+;
+"use strict";
+var $;
+(function ($) {
     class $my_warclick_game extends $.$mol_object2 {
         id() {
             return this.$.$mol_fail(new Error('id is not defined'));
@@ -4732,11 +4732,29 @@ var $;
         state() {
             return this.domain().state().doc('person').doc(this.id());
         }
-        health_red(next) {
-            return Number(this.state().sub('health_self').value(next) ?? 50);
+        actions(next) {
+            return (this.state().sub('actions').list(next) ?? []);
         }
-        health_blue(next) {
-            return Number(this.state().sub('health_enemy').value(next) ?? 50);
+        action(player, to, damage) {
+            const actions = this.actions();
+            this.actions([...actions, { player: player.id(), to, damage }]);
+        }
+        health(team) {
+            const actions = this.actions().filter(a => a.to === team);
+            const health = actions.reduce((sum, a) => {
+                return sum + a.damage;
+            }, 50);
+            if (health <= 0) {
+                $.$mol_fiber_defer(() => this.closed(true));
+            }
+            return health;
+        }
+        player_score(player) {
+            const actions = this.actions().filter(a => a.player === player.id());
+            const score = actions.reduce((sum, a) => {
+                return sum + Math.abs(a.damage);
+            }, 0);
+            return score;
         }
         players(next) {
             return (this.state().sub('players').list(next) ?? []);
@@ -4753,37 +4771,37 @@ var $;
         players_team(team) {
             return this.players().map(id => this.domain().person(id)).filter(p => p.team() === team);
         }
-        join(person) {
-            person.online_update();
+        join(player) {
+            player.online_update();
             if (this.closed())
                 return;
             const ids = new Set(this.players());
             const blue_count = this.players_team('blue');
             const red_count = this.players_team('red');
             if (red_count > blue_count)
-                person.team('blue');
+                player.team('blue');
             else
-                person.team('red');
-            ids.add(person.id());
+                player.team('red');
+            ids.add(player.id());
             const next = [...ids.values()];
             this.players(next);
             if (this.players_team('red').length && this.players_team('blue').length) {
                 this.started(true);
             }
         }
-        leave(person) {
+        leave(player) {
             if (this.closed())
                 return;
             const ids = new Set(this.players());
-            ids.delete(person.id());
+            ids.delete(player.id());
             this.players([...ids.values()]);
             if (!this.players_team('red').length || !this.players_team('blue')) {
                 this.closed(true);
             }
         }
         leader() {
-            const health_red = this.health_red();
-            const health_blue = this.health_blue();
+            const health_red = this.health('red');
+            const health_blue = this.health('blue');
             const players_red = this.players_team('red');
             const players_blue = this.players_team('blue');
             if (!players_red.length)
@@ -4794,7 +4812,7 @@ var $;
                 return 'red';
             if (health_red < health_blue)
                 return 'blue';
-            return 'nothing';
+            return 'equal';
         }
         kick_inactive() {
             const players = this.players().map(id => this.domain().person(id));
@@ -4803,34 +4821,16 @@ var $;
                     this.leave(player);
             }
         }
-        attack_red(person) {
-            person.online_update();
+        attack(player, to) {
+            player.online_update();
             if (this.closed())
                 return;
             if (!this.started())
                 return;
-            const current = this.health_red();
-            const damage = person.team() === 'red' ? 1 : -1;
-            this.health_red(this.health_red() + damage);
-            if (current < 1) {
-                return this.closed(true);
-            }
-        }
-        attack_blue(person) {
-            person.online_update();
-            if (this.closed())
-                return;
-            if (!this.started())
-                return;
-            const current = this.health_blue();
-            if (current < 1) {
-                return this.closed(true);
-            }
-            const damage = person.team() === 'blue' ? 1 : -1;
-            this.health_blue(this.health_blue() + damage);
-            if (current < 1) {
-                return this.closed(true);
-            }
+            if (player.team() === to)
+                this.action(player, to, 1);
+            else
+                this.action(player, to, -1);
         }
         player_joined(person) {
             const ids = new Set(this.players());
@@ -5999,7 +5999,9 @@ var $;
         Player(id) {
             const obj = new this.$.$mol_view();
             obj.sub = () => [
-                this.player_name(id)
+                this.player_name(id),
+                " - ",
+                this.player_score(id)
             ];
             return obj;
         }
@@ -6017,7 +6019,21 @@ var $;
             ];
             return obj;
         }
-        sub() {
+        Team_enemy_label() {
+            const obj = new this.$.$mol_view();
+            obj.sub = () => [
+                "(enemy)"
+            ];
+            return obj;
+        }
+        Team_allies_label() {
+            const obj = new this.$.$mol_view();
+            obj.sub = () => [
+                "(allies)"
+            ];
+            return obj;
+        }
+        rows() {
             return [
                 this.List(),
                 this.Description(),
@@ -6025,6 +6041,9 @@ var $;
             ];
         }
         player_name(id) {
+            return "";
+        }
+        player_score(id) {
             return "";
         }
         Guide() {
@@ -6088,10 +6107,17 @@ var $;
             ];
             return obj;
         }
+        Des1() {
+            const obj = new this.$.$mol_view();
+            obj.sub = () => [
+                "Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left. To begin, each team must have at least one player"
+            ];
+            return obj;
+        }
         Description() {
             const obj = new this.$.$mol_row();
             obj.sub = () => [
-                "Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left"
+                this.Des1()
             ];
             return obj;
         }
@@ -6139,10 +6165,17 @@ var $;
         status() {
             return "";
         }
+        Status() {
+            const obj = new this.$.$mol_view();
+            obj.sub = () => [
+                this.status()
+            ];
+            return obj;
+        }
         Status_zone() {
             const obj = new this.$.$mol_list();
             obj.rows = () => [
-                this.status()
+                this.Status()
             ];
             return obj;
         }
@@ -6208,6 +6241,12 @@ var $;
     ], $my_warclick.prototype, "Team_blue_title", null);
     __decorate([
         $.$mol_mem
+    ], $my_warclick.prototype, "Team_enemy_label", null);
+    __decorate([
+        $.$mol_mem
+    ], $my_warclick.prototype, "Team_allies_label", null);
+    __decorate([
+        $.$mol_mem
     ], $my_warclick.prototype, "Guide", null);
     __decorate([
         $.$mol_mem
@@ -6232,6 +6271,9 @@ var $;
     ], $my_warclick.prototype, "List", null);
     __decorate([
         $.$mol_mem
+    ], $my_warclick.prototype, "Des1", null);
+    __decorate([
+        $.$mol_mem
     ], $my_warclick.prototype, "Description", null);
     __decorate([
         $.$mol_mem
@@ -6248,6 +6290,9 @@ var $;
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "Red_zone", null);
+    __decorate([
+        $.$mol_mem
+    ], $my_warclick.prototype, "Status", null);
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "Status_zone", null);
@@ -6293,16 +6338,16 @@ var $;
                 return this.domain().user();
             }
             health_red() {
-                return String(this.game().health_red());
+                return String(this.game().health('red'));
             }
             health_blue() {
-                return String(this.game().health_blue());
+                return String(this.game().health('blue'));
             }
             attack_red() {
-                this.game().attack_red(this.user());
+                this.game().attack(this.user(), 'red');
             }
             attack_blue() {
-                this.game().attack_blue(this.user());
+                this.game().attack(this.user(), 'blue');
             }
             attack_enabled() {
                 if (!this.user().name())
@@ -6322,13 +6367,15 @@ var $;
                 const players = this.game().players().map(id => this.domain().person(id));
                 const red = players.filter(p => p.team() === 'red');
                 const Players = red.map(p => this.Player(p.id()));
-                return [this.Team_red_title(), ...Players];
+                const label = this.user().team() === 'blue' ? this.Team_enemy_label() : this.Team_allies_label();
+                return [this.Team_red_title(), label, ...Players].filter(Boolean);
             }
             team_blue_list() {
                 const players = this.game().players().map(id => this.domain().person(id));
                 const blue = players.filter(p => p.team() === 'blue');
                 const Players = blue.map(p => this.Player(p.id()));
-                return [this.Team_blue_title(), ...Players];
+                const label = this.user().team() === 'red' ? this.Team_enemy_label() : this.Team_allies_label();
+                return [this.Team_blue_title(), label, ...Players].filter(Boolean);
             }
             join() {
                 this.game().join(this.user());
@@ -6353,10 +6400,13 @@ var $;
             }
             status() {
                 if (this.game().closed())
-                    return 'Waiting player(s)';
+                    return 'Waiting for the players to join';
                 if (this.game().started())
                     return 'Fighting';
-                return 'Waiting player(s)';
+                return 'Waiting for the players to join';
+            }
+            player_score(id) {
+                return String(this.game().player_score(this.domain().person(id)));
             }
         }
         __decorate([
@@ -6374,6 +6424,9 @@ var $;
         __decorate([
             $.$mol_mem
         ], $my_warclick.prototype, "team_blue_list", null);
+        __decorate([
+            $.$mol_mem_key
+        ], $my_warclick.prototype, "player_score", null);
         $$.$my_warclick = $my_warclick;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
