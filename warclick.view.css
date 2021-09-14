@@ -26,4 +26,7 @@
 	align-items: center;
 }
 
+[my_warclick_desc] {
+	padding: var(--mol_gap_text);
+}
 

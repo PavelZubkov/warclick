@@ -26,7 +26,7 @@ $my_warclick $mol_list
 					click?val <=> leave?val null
 					title @ \leave
 					enabled <= leave_enabled null
-		<= Desc $mol_view sub / <= insruction @ \Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left. To begin, each team must have at least one player
+		<= Desc $mol_view sub / <= instruction @ \Click on a circle of enemies to deal damage, on your own to heal. You will lose when you have 0 health left. To start, each team must have at least one player.
 		<= Game $mol_row
 			sub /
 				<= Allies_zone $mol_list
