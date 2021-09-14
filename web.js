@@ -6020,6 +6020,7 @@ var $;
         sub() {
             return [
                 this.List(),
+                this.Description(),
                 this.Game()
             ];
         }
@@ -6084,6 +6085,13 @@ var $;
                 this.Person_name(),
                 this.Join(),
                 this.Leave()
+            ];
+            return obj;
+        }
+        Description() {
+            const obj = new this.$.$mol_row();
+            obj.sub = () => [
+                "Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left"
             ];
             return obj;
         }
@@ -6222,6 +6230,9 @@ var $;
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "List", null);
+    __decorate([
+        $.$mol_mem
+    ], $my_warclick.prototype, "Description", null);
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "attack_red", null);

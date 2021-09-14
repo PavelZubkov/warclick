@@ -1757,6 +1757,7 @@ declare namespace $ {
         leave_enabled(): any;
         Leave(): $mol_button_major;
         List(): $mol_row;
+        Description(): $mol_row;
         attack_red(val?: any): any;
         health_red(): string;
         attack_enabled(): any;
