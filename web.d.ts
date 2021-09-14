@@ -1193,12 +1193,11 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    class $my_warclick_person extends $mol_object2 {
+    class $my_warclick_player extends $mol_object2 {
         id(): string;
         domain(): $my_warclick_domain;
         state(): $mol_state_shared;
         name(next?: string): string;
-        team(next?: 'red' | 'blue'): string;
         online_time(): $mol_time_moment | null;
         online_near(): boolean;
         online_update(): void;
@@ -1210,37 +1209,41 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    enum $my_warclick_game_team {
+        ally = 0,
+        enemy = 1
+    }
     type $my_warclick_game_action = {
         player: string;
         damage: -1 | 1;
-        to: 'red' | 'blue';
+        to: $my_warclick_game_team;
     };
     class $my_warclick_game extends $mol_object2 {
         id(): string;
         domain(): $my_warclick_domain;
         state(): $mol_state_shared;
         actions(next?: $my_warclick_game_action[]): $my_warclick_game_action[];
-        action(player: $my_warclick_person, to: 'red' | 'blue', damage: -1 | 1): void;
-        health(team: 'red' | 'blue'): number;
-        player_score(player: $my_warclick_person): number;
-        players(next?: string[]): string[];
+        action(player: $my_warclick_player, to: $my_warclick_game_team, damage: -1 | 1): void;
+        health(team: $my_warclick_game_team): number;
+        player_score(player: $my_warclick_player): number;
+        players_ally(next?: string[]): string[];
+        players_enemy(next?: string[]): string[];
         started(next?: boolean): boolean;
         closed(next?: boolean): boolean;
-        players_team(team: 'red' | 'blue'): $my_warclick_person[];
-        join(player: $my_warclick_person): void;
-        leave(player: $my_warclick_person): void;
-        leader(): 'red' | 'blue' | 'equal';
-        kick_inactive(): void;
-        attack(player: $my_warclick_person, to: 'red' | 'blue'): void;
-        player_joined(person: $my_warclick_person): boolean;
+        player_team(player: $my_warclick_player): $my_warclick_game_team;
+        join(player: $my_warclick_player): void;
+        leave(player: $my_warclick_player): void;
+        leader(): $my_warclick_game_team | null;
+        attack(player: $my_warclick_player, to: $my_warclick_game_team): void;
+        player_joined(player: $my_warclick_player): boolean;
     }
 }
 
 declare namespace $ {
     class $my_warclick_domain extends $mol_object2 {
         state(): $mol_state_shared;
-        user(): $my_warclick_person;
-        person(id: string): $my_warclick_person;
+        user(): $my_warclick_player;
+        player(id: string): $my_warclick_player;
         game(id: string): $my_warclick_game;
         game_current(next?: $my_warclick_game): $my_warclick_game;
     }
@@ -1747,18 +1750,19 @@ declare namespace $ {
     class $my_warclick extends $mol_list {
         domain(): $my_warclick_domain;
         title(): string;
+        msg_waiting_players(): string;
+        msg_fighting(): string;
+        msg_ally_win(): string;
+        msg_enemy_win(): string;
         Player(id: any): $mol_view;
-        Team_red_title(): $mol_view;
-        Team_blue_title(): $mol_view;
-        Team_enemy_label(): $mol_view;
-        Team_allies_label(): $mol_view;
         rows(): readonly any[];
         player_name(id: any): string;
         player_score(id: any): string;
+        msg_guide(): string;
         Guide(): $mol_view;
         name(val?: any): string;
         name_hint(): string;
-        Person_name(): $$.$mol_string;
+        Player_name(): $$.$mol_string;
         join(val?: any): any;
         join_enabled(): any;
         Join(): $mol_button_major;
@@ -1766,26 +1770,30 @@ declare namespace $ {
         leave_enabled(): any;
         Leave(): $mol_button_major;
         List(): $mol_row;
-        Des1(): $mol_view;
-        Description(): $mol_row;
-        attack_red(val?: any): any;
-        health_red(): string;
+        instruction(): string;
+        Desc(): $mol_view;
+        ally_attack(val?: any): any;
+        ally_health(): string;
         attack_enabled(): any;
-        Red(): $mol_button_major;
-        team_red_list(): readonly any[];
-        Team_red_list(): $$.$mol_list;
-        Team_red(): $mol_view;
-        Red_zone(): $$.$mol_list;
+        Ally(): $mol_button_major;
+        ally_label(): string;
+        Ally_label(): $mol_view;
+        ally_team_list(): readonly any[];
+        Ally_team_list(): $$.$mol_list;
+        Ally_team(): $mol_view;
+        Allies_zone(): $$.$mol_list;
         status(): string;
         Status(): $mol_view;
         Status_zone(): $$.$mol_list;
-        attack_blue(val?: any): any;
-        health_blue(): string;
-        Blue(): $mol_button_major;
-        team_blue_list(): readonly any[];
-        Team_blue_list(): $$.$mol_list;
-        Team_blue(): $mol_view;
-        Blue_zone(): $$.$mol_list;
+        enemy_attack(val?: any): any;
+        enemy_health(): string;
+        Enemy(): $mol_button_major;
+        enemy_label(): string;
+        Enemy_label(): $mol_view;
+        enemy_team_list(): readonly any[];
+        Enemy_team_list(): $$.$mol_list;
+        Enemy_team(): $mol_view;
+        Enemy_zone(): $$.$mol_list;
         Game(): $mol_row;
     }
 }
@@ -1796,26 +1804,28 @@ declare namespace $ {
 declare namespace $.$$ {
     class $my_warclick extends $.$my_warclick {
         game(): $my_warclick_game;
-        user(): $my_warclick_person;
-        health_red(): string;
-        health_blue(): string;
-        attack_red(): void;
-        attack_blue(): void;
-        attack_enabled(): boolean;
-        team(next?: string): string;
+        user(): $my_warclick_player;
+        team(): $my_warclick_game_team;
+        team_enemy(): $my_warclick_game_team;
         name(next?: string): string;
         player_name(id: string): string;
-        team_red_list(): $mol_view[];
-        team_blue_list(): $mol_view[];
+        player_score(id: string): string;
+        ally_health(): string;
+        enemy_health(): string;
+        ally_attack(): void;
+        enemy_attack(): void;
+        attack_enabled(): boolean;
+        team_players(team: $my_warclick_game_team): string[];
+        ally_team_list(): $mol_view[];
+        enemy_team_list(): $mol_view[];
         join(): void;
         join_enabled(): boolean;
         leave(): void;
         leave_enabled(): boolean;
         game_started(): boolean;
         game_closed(): boolean;
-        leader(): "red" | "blue" | "equal";
-        status(): "Waiting for the players to join" | "Fighting";
-        player_score(id: string): string;
+        game_leader(): $my_warclick_game_team | null;
+        game_status(): string;
     }
 }
 

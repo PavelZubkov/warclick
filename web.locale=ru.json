@@ -1,0 +1,13 @@
+{
+	"$my_warclick_Join_title": "Присоединиться",
+	"$my_warclick_Leave_title": "Покинуть",
+	"$my_warclick_ally_label": "Союзники:",
+	"$my_warclick_enemy_label": "Враги:",
+	"$my_warclick_instruction": "Кликните по кругу врагов, чтобы нанести урон, по своему для лечение. Вы проиграете, когда у вас останется 0 здоровья. Чтобы начать, в каждой команде должен быть хотя бы один игрок.",
+	"$my_warclick_msg_ally_win": "Союзники победили!",
+	"$my_warclick_msg_enemy_win": "Враги победили!",
+	"$my_warclick_msg_fighting": "Бой",
+	"$my_warclick_msg_guide": "Введите имя и присоединитесь",
+	"$my_warclick_msg_waiting_players": "Ждем, когда другие игроки присоединятся",
+	"$my_warclick_name_hint": "Имя игрока"
+}

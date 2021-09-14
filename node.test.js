@@ -4907,7 +4907,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    class $my_warclick_person extends $.$mol_object2 {
+    class $my_warclick_player extends $.$mol_object2 {
         id() {
             return this.$.$mol_fail(new Error('id is not defined'));
         }
@@ -4915,13 +4915,10 @@ var $;
             return this.$.$mol_fail(new Error('domain is not defined'));
         }
         state() {
-            return this.domain().state().doc('person').doc(this.id());
+            return this.domain().state().doc('player').doc(this.id());
         }
         name(next) {
             return String(this.state().sub('name').value(next) ?? '');
-        }
-        team(next) {
-            return String(this.state().sub('team').value(next) ?? 'red');
         }
         online_time() {
             const str = this.state().sub('online').value();
@@ -4942,16 +4939,16 @@ var $;
     }
     __decorate([
         $.$mol_mem
-    ], $my_warclick_person.prototype, "state", null);
+    ], $my_warclick_player.prototype, "state", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick_person.prototype, "online_time", null);
+    ], $my_warclick_player.prototype, "online_time", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick_person.prototype, "online_near", null);
-    $.$my_warclick_person = $my_warclick_person;
+    ], $my_warclick_player.prototype, "online_near", null);
+    $.$my_warclick_player = $my_warclick_player;
 })($ || ($ = {}));
-//person.js.map
+//player.js.map
 ;
 "use strict";
 var $;
@@ -4971,6 +4968,11 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    let $my_warclick_game_team;
+    (function ($my_warclick_game_team) {
+        $my_warclick_game_team[$my_warclick_game_team["ally"] = 0] = "ally";
+        $my_warclick_game_team[$my_warclick_game_team["enemy"] = 1] = "enemy";
+    })($my_warclick_game_team = $.$my_warclick_game_team || ($.$my_warclick_game_team = {}));
     class $my_warclick_game extends $.$mol_object2 {
         id() {
             return this.$.$mol_fail(new Error('id is not defined'));
@@ -4979,7 +4981,7 @@ var $;
             return this.$.$mol_fail(new Error('domain is not defined'));
         }
         state() {
-            return this.domain().state().doc('person').doc(this.id());
+            return this.domain().state().doc('player').doc(this.id());
         }
         actions(next) {
             return (this.state().sub('actions').list(next) ?? []);
@@ -5005,8 +5007,11 @@ var $;
             }, 0);
             return score;
         }
-        players(next) {
-            return (this.state().sub('players').list(next) ?? []);
+        players_ally(next) {
+            return (this.state().sub('players_ally').list(next) ?? []);
+        }
+        players_enemy(next) {
+            return (this.state().sub('players_enemy').list(next) ?? []);
         }
         started(next) {
             return Boolean(this.state().sub('started').value(next) ?? false);
@@ -5017,58 +5022,52 @@ var $;
             }
             return Boolean(this.state().sub('closed').value(next) ?? false);
         }
-        players_team(team) {
-            return this.players().map(id => this.domain().person(id)).filter(p => p.team() === team);
+        player_team(player) {
+            return this.players_ally().indexOf(player.id()) !== -1 ? $my_warclick_game_team.ally : $my_warclick_game_team.enemy;
         }
         join(player) {
             player.online_update();
             if (this.closed())
                 return;
-            const ids = new Set(this.players());
-            const blue_count = this.players_team('blue');
-            const red_count = this.players_team('red');
-            if (red_count > blue_count)
-                player.team('blue');
-            else
-                player.team('red');
-            ids.add(player.id());
-            const next = [...ids.values()];
-            this.players(next);
-            if (this.players_team('red').length && this.players_team('blue').length) {
-                this.started(true);
+            const ally_count = this.players_ally().length;
+            const enemy_count = this.players_enemy().length;
+            if (ally_count > enemy_count) {
+                const ids = new Set(this.players_enemy());
+                ids.add(player.id());
+                this.players_enemy([...ids.values()]);
+            }
+            else {
+                const ids = new Set(this.players_ally());
+                ids.add(player.id());
+                this.players_ally([...ids.values()]);
+            }
+            if (this.players_ally().length && this.players_enemy().length) {
+                $.$mol_fiber_defer(() => this.started(true));
             }
         }
         leave(player) {
             if (this.closed())
                 return;
-            const ids = new Set(this.players());
+            const players = this.player_team(player) === $my_warclick_game_team.ally
+                ? (next) => this.players_ally(next)
+                : (next) => this.players_enemy(next);
+            const ids = new Set(players());
             ids.delete(player.id());
-            this.players([...ids.values()]);
-            if (!this.players_team('red').length || !this.players_team('blue')) {
-                this.closed(true);
+            players([...ids.values()]);
+            if (!this.players_ally().length || !this.players_enemy().length) {
+                $.$mol_fiber_defer(() => this.closed(true));
             }
         }
         leader() {
-            const health_red = this.health('red');
-            const health_blue = this.health('blue');
-            const players_red = this.players_team('red');
-            const players_blue = this.players_team('blue');
-            if (!players_red.length)
-                return 'blue';
-            if (!players_blue.length)
-                return 'red';
-            if (health_red > health_blue)
-                return 'red';
-            if (health_red < health_blue)
-                return 'blue';
-            return 'equal';
-        }
-        kick_inactive() {
-            const players = this.players().map(id => this.domain().person(id));
-            for (const player of players) {
-                if (!player.online_near())
-                    this.leave(player);
-            }
+            const health_ally = this.health($my_warclick_game_team.ally);
+            const health_enemy = this.health($my_warclick_game_team.enemy);
+            const players_ally = this.players_ally();
+            const players_enemy = this.players_enemy();
+            if (!players_ally.length || health_ally < health_enemy)
+                return $my_warclick_game_team.enemy;
+            if (!players_enemy.length || health_ally > health_enemy)
+                return $my_warclick_game_team.ally;
+            return null;
         }
         attack(player, to) {
             player.online_update();
@@ -5076,14 +5075,14 @@ var $;
                 return;
             if (!this.started())
                 return;
-            if (player.team() === to)
+            if (this.player_team(player) === to)
                 this.action(player, to, 1);
             else
                 this.action(player, to, -1);
         }
-        player_joined(person) {
-            const ids = new Set(this.players());
-            const joined = ids.has(person.id());
+        player_joined(player) {
+            const ids = new Set([...this.players_ally(), ...this.players_enemy()]);
+            const joined = ids.has(player.id());
             return joined;
         }
     }
@@ -5092,7 +5091,7 @@ var $;
     ], $my_warclick_game.prototype, "state", null);
     __decorate([
         $.$mol_mem_key
-    ], $my_warclick_game.prototype, "players_team", null);
+    ], $my_warclick_game.prototype, "player_team", null);
     $.$my_warclick_game = $my_warclick_game;
 })($ || ($ = {}));
 //game.js.map
@@ -5111,13 +5110,13 @@ var $;
                 id = Math.random().toString(16).slice(2);
                 new $.$mol_after_tick(() => this.$.$mol_store_local.value('user', id));
             }
-            return this.person(id);
+            return this.player(id);
         }
-        person(id) {
-            const person = new $.$my_warclick_person();
-            person.id = $.$mol_const(id);
-            person.domain = $.$mol_const(this);
-            return person;
+        player(id) {
+            const player = new $.$my_warclick_player();
+            player.id = $.$mol_const(id);
+            player.domain = $.$mol_const(this);
+            return player;
         }
         game(id) {
             const game = new $.$my_warclick_game();
@@ -5144,7 +5143,7 @@ var $;
     ], $my_warclick_domain.prototype, "user", null);
     __decorate([
         $.$mol_mem_key
-    ], $my_warclick_domain.prototype, "person", null);
+    ], $my_warclick_domain.prototype, "player", null);
     __decorate([
         $.$mol_mem_key
     ], $my_warclick_domain.prototype, "game", null);
@@ -6217,49 +6216,34 @@ var $;
             return obj;
         }
         title() {
-            return this.$.$mol_locale.text('$my_warclick_title');
+            return "Warclick";
+        }
+        msg_waiting_players() {
+            return this.$.$mol_locale.text('$my_warclick_msg_waiting_players');
+        }
+        msg_fighting() {
+            return this.$.$mol_locale.text('$my_warclick_msg_fighting');
+        }
+        msg_ally_win() {
+            return this.$.$mol_locale.text('$my_warclick_msg_ally_win');
+        }
+        msg_enemy_win() {
+            return this.$.$mol_locale.text('$my_warclick_msg_enemy_win');
         }
         Player(id) {
             const obj = new this.$.$mol_view();
             obj.sub = () => [
-                this.player_name(id),
                 " - ",
+                this.player_name(id),
+                " : ",
                 this.player_score(id)
-            ];
-            return obj;
-        }
-        Team_red_title() {
-            const obj = new this.$.$mol_view();
-            obj.sub = () => [
-                "Red"
-            ];
-            return obj;
-        }
-        Team_blue_title() {
-            const obj = new this.$.$mol_view();
-            obj.sub = () => [
-                "Blue"
-            ];
-            return obj;
-        }
-        Team_enemy_label() {
-            const obj = new this.$.$mol_view();
-            obj.sub = () => [
-                "(enemy)"
-            ];
-            return obj;
-        }
-        Team_allies_label() {
-            const obj = new this.$.$mol_view();
-            obj.sub = () => [
-                "(allies)"
             ];
             return obj;
         }
         rows() {
             return [
                 this.List(),
-                this.Description(),
+                this.Desc(),
                 this.Game()
             ];
         }
@@ -6269,10 +6253,13 @@ var $;
         player_score(id) {
             return "";
         }
+        msg_guide() {
+            return this.$.$mol_locale.text('$my_warclick_msg_guide');
+        }
         Guide() {
             const obj = new this.$.$mol_view();
             obj.sub = () => [
-                "Enter name and click join"
+                this.msg_guide()
             ];
             return obj;
         }
@@ -6284,7 +6271,7 @@ var $;
         name_hint() {
             return this.$.$mol_locale.text('$my_warclick_name_hint');
         }
-        Person_name() {
+        Player_name() {
             const obj = new this.$.$mol_string();
             obj.value = (val) => this.name(val);
             obj.hint = () => this.name_hint();
@@ -6301,7 +6288,7 @@ var $;
         Join() {
             const obj = new this.$.$mol_button_major();
             obj.click = (val) => this.join(val);
-            obj.title = () => "join";
+            obj.title = () => this.$.$mol_locale.text('$my_warclick_Join_title');
             obj.enabled = () => this.join_enabled();
             return obj;
         }
@@ -6316,7 +6303,7 @@ var $;
         Leave() {
             const obj = new this.$.$mol_button_major();
             obj.click = (val) => this.leave(val);
-            obj.title = () => "leave";
+            obj.title = () => this.$.$mol_locale.text('$my_warclick_Leave_title');
             obj.enabled = () => this.leave_enabled();
             return obj;
         }
@@ -6324,64 +6311,71 @@ var $;
             const obj = new this.$.$mol_row();
             obj.sub = () => [
                 this.Guide(),
-                this.Person_name(),
+                this.Player_name(),
                 this.Join(),
                 this.Leave()
             ];
             return obj;
         }
-        Des1() {
+        instruction() {
+            return this.$.$mol_locale.text('$my_warclick_instruction');
+        }
+        Desc() {
             const obj = new this.$.$mol_view();
             obj.sub = () => [
-                "Click on the enemy's color for damage, on yours for healing. You lose when you have 0 hit points left. To begin, each team must have at least one player"
+                this.instruction()
             ];
             return obj;
         }
-        Description() {
-            const obj = new this.$.$mol_row();
-            obj.sub = () => [
-                this.Des1()
-            ];
-            return obj;
-        }
-        attack_red(val) {
+        ally_attack(val) {
             if (val !== undefined)
                 return val;
             return null;
         }
-        health_red() {
+        ally_health() {
             return "";
         }
         attack_enabled() {
             return null;
         }
-        Red() {
+        Ally() {
             const obj = new this.$.$mol_button_major();
-            obj.click = (val) => this.attack_red(val);
-            obj.title = () => this.health_red();
+            obj.click = (val) => this.ally_attack(val);
+            obj.title = () => this.ally_health();
             obj.enabled = () => this.attack_enabled();
             return obj;
         }
-        team_red_list() {
-            return [];
+        ally_label() {
+            return this.$.$mol_locale.text('$my_warclick_ally_label');
         }
-        Team_red_list() {
-            const obj = new this.$.$mol_list();
-            obj.rows = () => this.team_red_list();
-            return obj;
-        }
-        Team_red() {
+        Ally_label() {
             const obj = new this.$.$mol_view();
             obj.sub = () => [
-                this.Team_red_list()
+                this.ally_label()
             ];
             return obj;
         }
-        Red_zone() {
+        ally_team_list() {
+            return [];
+        }
+        Ally_team_list() {
+            const obj = new this.$.$mol_list();
+            obj.rows = () => this.ally_team_list();
+            return obj;
+        }
+        Ally_team() {
+            const obj = new this.$.$mol_view();
+            obj.sub = () => [
+                this.Ally_team_list()
+            ];
+            return obj;
+        }
+        Allies_zone() {
             const obj = new this.$.$mol_list();
             obj.rows = () => [
-                this.Red(),
-                this.Team_red()
+                this.Ally(),
+                this.Ally_label(),
+                this.Ally_team()
             ];
             return obj;
         }
@@ -6402,50 +6396,61 @@ var $;
             ];
             return obj;
         }
-        attack_blue(val) {
+        enemy_attack(val) {
             if (val !== undefined)
                 return val;
             return null;
         }
-        health_blue() {
+        enemy_health() {
             return "";
         }
-        Blue() {
+        Enemy() {
             const obj = new this.$.$mol_button_major();
-            obj.click = (val) => this.attack_blue(val);
-            obj.title = () => this.health_blue();
+            obj.click = (val) => this.enemy_attack(val);
+            obj.title = () => this.enemy_health();
             obj.enabled = () => this.attack_enabled();
             return obj;
         }
-        team_blue_list() {
-            return [];
+        enemy_label() {
+            return this.$.$mol_locale.text('$my_warclick_enemy_label');
         }
-        Team_blue_list() {
-            const obj = new this.$.$mol_list();
-            obj.rows = () => this.team_blue_list();
-            return obj;
-        }
-        Team_blue() {
+        Enemy_label() {
             const obj = new this.$.$mol_view();
             obj.sub = () => [
-                this.Team_blue_list()
+                this.enemy_label()
             ];
             return obj;
         }
-        Blue_zone() {
+        enemy_team_list() {
+            return [];
+        }
+        Enemy_team_list() {
+            const obj = new this.$.$mol_list();
+            obj.rows = () => this.enemy_team_list();
+            return obj;
+        }
+        Enemy_team() {
+            const obj = new this.$.$mol_view();
+            obj.sub = () => [
+                this.Enemy_team_list()
+            ];
+            return obj;
+        }
+        Enemy_zone() {
             const obj = new this.$.$mol_list();
             obj.rows = () => [
-                this.Blue(),
-                this.Team_blue()
+                this.Enemy(),
+                this.Enemy_label(),
+                this.Enemy_team()
             ];
             return obj;
         }
         Game() {
             const obj = new this.$.$mol_row();
             obj.sub = () => [
-                this.Red_zone(),
+                this.Allies_zone(),
                 this.Status_zone(),
-                this.Blue_zone()
+                this.Enemy_zone()
             ];
             return obj;
         }
@@ -6458,25 +6463,13 @@ var $;
     ], $my_warclick.prototype, "Player", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Team_red_title", null);
-    __decorate([
-        $.$mol_mem
-    ], $my_warclick.prototype, "Team_blue_title", null);
-    __decorate([
-        $.$mol_mem
-    ], $my_warclick.prototype, "Team_enemy_label", null);
-    __decorate([
-        $.$mol_mem
-    ], $my_warclick.prototype, "Team_allies_label", null);
-    __decorate([
-        $.$mol_mem
     ], $my_warclick.prototype, "Guide", null);
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "name", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Person_name", null);
+    ], $my_warclick.prototype, "Player_name", null);
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "join", null);
@@ -6494,25 +6487,25 @@ var $;
     ], $my_warclick.prototype, "List", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Des1", null);
+    ], $my_warclick.prototype, "Desc", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Description", null);
+    ], $my_warclick.prototype, "ally_attack", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "attack_red", null);
+    ], $my_warclick.prototype, "Ally", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Red", null);
+    ], $my_warclick.prototype, "Ally_label", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Team_red_list", null);
+    ], $my_warclick.prototype, "Ally_team_list", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Team_red", null);
+    ], $my_warclick.prototype, "Ally_team", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Red_zone", null);
+    ], $my_warclick.prototype, "Allies_zone", null);
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "Status", null);
@@ -6521,19 +6514,22 @@ var $;
     ], $my_warclick.prototype, "Status_zone", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "attack_blue", null);
+    ], $my_warclick.prototype, "enemy_attack", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Blue", null);
+    ], $my_warclick.prototype, "Enemy", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Team_blue_list", null);
+    ], $my_warclick.prototype, "Enemy_label", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Team_blue", null);
+    ], $my_warclick.prototype, "Enemy_team_list", null);
     __decorate([
         $.$mol_mem
-    ], $my_warclick.prototype, "Blue_zone", null);
+    ], $my_warclick.prototype, "Enemy_team", null);
+    __decorate([
+        $.$mol_mem
+    ], $my_warclick.prototype, "Enemy_zone", null);
     __decorate([
         $.$mol_mem
     ], $my_warclick.prototype, "Game", null);
@@ -6544,7 +6540,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $.$mol_style_attach("my/warclick/warclick.view.css", "[my_warclick_red],\n[my_warclick_blue] {\n\tdisplay: inline-flex;\n\talign-items: center;\n\tjustify-content: center;\n\tborder-radius: 50%;\n\twidth: 10rem;\n\theight: 10rem;\n\tfont-size: 4rem;\n\tfont-weight: bold;\n}\n\n[my_warclick_red],\n[my_warclick_red]:hover,\n[my_warclick_red]:focus {\n\tbackground-color: red;\n}\n\n[my_warclick_blue],\n[my_warclick_blue]:hover,\n[my_warclick_blue]:focus {\n\tbackground-color: blue;\n}\n\n[my_warclick_list] {\n\talign-items: center;\n}\n\n\n");
+    $.$mol_style_attach("my/warclick/warclick.view.css", "[my_warclick_ally],\n[my_warclick_enemy] {\n\tdisplay: inline-flex;\n\talign-items: center;\n\tjustify-content: center;\n\tborder-radius: 50%;\n\twidth: 10rem;\n\theight: 10rem;\n\tfont-size: 4rem;\n\tfont-weight: bold;\n}\n\n[my_warclick_ally],\n[my_warclick_ally]:hover,\n[my_warclick_ally]:focus {\n\tbackground-color: green;\n}\n\n[my_warclick_enemy],\n[my_warclick_enemy]:hover,\n[my_warclick_enemy]:focus {\n\tbackground-color: red;\n}\n\n[my_warclick_list] {\n\talign-items: center;\n}\n\n[my_warclick_desc] {\n\tpadding: var(--mol_gap_text);\n}\n\n");
 })($ || ($ = {}));
 //warclick.view.css.js.map
 ;
@@ -6560,45 +6556,46 @@ var $;
             user() {
                 return this.domain().user();
             }
-            health_red() {
-                return String(this.game().health('red'));
+            team() {
+                return this.game().player_team(this.user());
             }
-            health_blue() {
-                return String(this.game().health('blue'));
+            team_enemy() {
+                return this.team() === $.$my_warclick_game_team.ally ? $.$my_warclick_game_team.enemy : $.$my_warclick_game_team.ally;
             }
-            attack_red() {
-                this.game().attack(this.user(), 'red');
+            name(next) {
+                return this.user().name(next);
             }
-            attack_blue() {
-                this.game().attack(this.user(), 'blue');
+            player_name(id) {
+                return this.domain().player(id).name() + ' ';
+            }
+            player_score(id) {
+                return String(this.game().player_score(this.domain().player(id)));
+            }
+            ally_health() {
+                return String(this.game().health(this.team()));
+            }
+            enemy_health() {
+                return String(this.game().health(this.team_enemy()));
+            }
+            ally_attack() {
+                this.game().attack(this.user(), this.team());
+            }
+            enemy_attack() {
+                this.game().attack(this.user(), this.team_enemy());
             }
             attack_enabled() {
                 if (!this.user().name())
                     return false;
                 return true;
             }
-            team(next) {
-                return this.user().team(next);
+            team_players(team) {
+                return team === $.$my_warclick_game_team.ally ? this.game().players_ally() : this.game().players_enemy();
             }
-            name(next) {
-                return this.user().name(next);
+            ally_team_list() {
+                return this.team_players(this.team()).map(id => this.Player(id));
             }
-            player_name(id) {
-                return this.domain().person(id).name() + ' ';
-            }
-            team_red_list() {
-                const players = this.game().players().map(id => this.domain().person(id));
-                const red = players.filter(p => p.team() === 'red');
-                const Players = red.map(p => this.Player(p.id()));
-                const label = this.user().team() === 'blue' ? this.Team_enemy_label() : this.Team_allies_label();
-                return [this.Team_red_title(), label, ...Players].filter(Boolean);
-            }
-            team_blue_list() {
-                const players = this.game().players().map(id => this.domain().person(id));
-                const blue = players.filter(p => p.team() === 'blue');
-                const Players = blue.map(p => this.Player(p.id()));
-                const label = this.user().team() === 'red' ? this.Team_enemy_label() : this.Team_allies_label();
-                return [this.Team_blue_title(), label, ...Players].filter(Boolean);
+            enemy_team_list() {
+                return this.team_players(this.team_enemy()).map(id => this.Player(id));
             }
             join() {
                 this.game().join(this.user());
@@ -6618,23 +6615,17 @@ var $;
             game_closed() {
                 return this.game().closed();
             }
-            leader() {
+            game_leader() {
                 return this.game().leader();
             }
-            status() {
-                if (this.game().closed())
-                    return 'Waiting for the players to join';
-                if (this.game().started())
-                    return 'Fighting';
-                return 'Waiting for the players to join';
-            }
-            player_score(id) {
-                return String(this.game().player_score(this.domain().person(id)));
+            game_status() {
+                if (!this.game_started() && !this.game_closed())
+                    return this.msg_waiting_players();
+                if (this.game().started() && !this.game_closed())
+                    return this.msg_fighting();
+                return this.game_leader() === $.$my_warclick_game_team.ally ? this.msg_ally_win() : this.msg_enemy_win();
             }
         }
-        __decorate([
-            $.$mol_mem
-        ], $my_warclick.prototype, "team", null);
         __decorate([
             $.$mol_mem
         ], $my_warclick.prototype, "name", null);
@@ -6642,14 +6633,17 @@ var $;
             $.$mol_mem_key
         ], $my_warclick.prototype, "player_name", null);
         __decorate([
-            $.$mol_mem
-        ], $my_warclick.prototype, "team_red_list", null);
-        __decorate([
-            $.$mol_mem
-        ], $my_warclick.prototype, "team_blue_list", null);
-        __decorate([
             $.$mol_mem_key
         ], $my_warclick.prototype, "player_score", null);
+        __decorate([
+            $.$mol_mem_key
+        ], $my_warclick.prototype, "team_players", null);
+        __decorate([
+            $.$mol_mem
+        ], $my_warclick.prototype, "ally_team_list", null);
+        __decorate([
+            $.$mol_mem
+        ], $my_warclick.prototype, "enemy_team_list", null);
         $$.$my_warclick = $my_warclick;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));

@@ -1,4 +1,13 @@
 {
-	"$my_warclick_name_hint": "Player name",
-	"$my_warclick_title": "Warclick"
+	"$my_warclick_Join_title": "join",
+	"$my_warclick_Leave_title": "leave",
+	"$my_warclick_ally_label": "Allies:",
+	"$my_warclick_enemy_label": "Enemies:",
+	"$my_warclick_instruction": "Click on a circle of enemies to deal damage, on your own to heal. You will lose when you have 0 health left. To start, each team must have at least one player.",
+	"$my_warclick_msg_ally_win": "Allies win!",
+	"$my_warclick_msg_enemy_win": "Enemy win!",
+	"$my_warclick_msg_fighting": "Fighting",
+	"$my_warclick_msg_guide": "Enter name and click join",
+	"$my_warclick_msg_waiting_players": "Waiting for the players to join",
+	"$my_warclick_name_hint": "Player name"
 }
