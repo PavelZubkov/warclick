@@ -18,15 +18,15 @@ namespace $ {
 				new $mol_after_tick( ()=> this.$.$mol_store_local.value( 'user', id ) )
 			}
 			
-			return this.person( id )
+			return this.player( id )
 		}
 		
 		@ $mol_mem_key
-		person( id: string ) {
-			const person = new $my_warclick_person()
-			person.id = $mol_const( id )
-			person.domain = $mol_const( this )
-			return person
+		player( id: string ) {
+			const player = new $my_warclick_player()
+			player.id = $mol_const( id )
+			player.domain = $mol_const( this )
+			return player
 		}
 		
 		@ $mol_mem_key

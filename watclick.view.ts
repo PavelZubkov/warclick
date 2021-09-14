@@ -10,30 +10,12 @@ namespace $.$$ {
 			return this.domain().user()
 		}
 		
-		health_red() {
-			return String( this.game().health('red') )
+		team() {
+			return this.game().player_team( this.user() )
 		}
 		
-		health_blue() {
-			return String( this.game().health('blue') )
-		}
-		
-		attack_red() {
-			this.game().attack( this.user() , 'red' )
-		}
-		
-		attack_blue() {
-			this.game().attack( this.user() , 'blue' )
-		}
-		
-		attack_enabled() {
-			if ( !this.user().name() ) return false
-			return true
-		}
-
-		@ $mol_mem
-		team( next?: string ) {
-			return this.user().team( next as 'red' | 'blue' )
+		team_enemy() {
+			return this.team() === $my_warclick_game_team.ally ? $my_warclick_game_team.enemy : $my_warclick_game_team.ally
 		}
 		
 		@ $mol_mem
@@ -43,25 +25,48 @@ namespace $.$$ {
 		
 		@ $mol_mem_key
 		player_name( id : string ) {
-			return this.domain().person( id ).name() + ' '
+			return this.domain().player( id ).name() + ' '
 		}
-				
-		@ $mol_mem
-		team_red_list() {
-			const players = this.game().players().map( id => this.domain().person( id ) )
-			const red = players.filter( p => p.team() === 'red' )
-			const Players = red.map( p => this.Player( p.id() ) )
-			const label = this.user().team() === 'blue' ? this.Team_enemy_label() : this.Team_allies_label()
-			return [ this.Team_red_title() , label , ... Players ].filter(Boolean)
+
+		@ $mol_mem_key
+		player_score( id : string ) {
+			return String( this.game().player_score( this.domain().player( id ) ) )
+		}
+		
+		ally_health() {
+			return String( this.game().health( this.team() ) )
+		}
+		
+		enemy_health() {
+			return String( this.game().health( this.team_enemy() ) )
+		}
+		
+		ally_attack() {
+			this.game().attack( this.user() , this.team() )
+		}
+		
+		enemy_attack() {
+			this.game().attack( this.user() , this.team_enemy() )
+		}
+		
+		attack_enabled() {
+			if ( !this.user().name() ) return false
+			return true
+		}
+		
+		@ $mol_mem_key
+		team_players( team : $my_warclick_game_team ) {
+			return team === $my_warclick_game_team.ally ? this.game().players_ally() : this.game().players_enemy()
 		}
 		
 		@ $mol_mem
-		team_blue_list() {
-			const players = this.game().players().map( id => this.domain().person( id ) )
-			const blue = players.filter( p => p.team() === 'blue' )
-			const Players = blue.map( p => this.Player( p.id() ) )
-			const label = this.user().team() === 'red' ? this.Team_enemy_label() : this.Team_allies_label()
-			return [ this.Team_blue_title() , label , ... Players ].filter(Boolean)
+		ally_team_list() {
+			return this.team_players( this.team() ).map( id => this.Player( id ) )
+		}
+		
+		@ $mol_mem
+		enemy_team_list() {
+			return this.team_players( this.team_enemy() ).map( id => this.Player( id ) )
 		}
 		
 		join() {
@@ -88,21 +93,16 @@ namespace $.$$ {
 			return this.game().closed()
 		}
 
-		leader() {
+		game_leader() {
 			return this.game().leader()
 		}
 		
-		status() {
-			if ( this.game().closed() ) return 'Waiting for the players to join'
-			if ( this.game().started() ) return 'Fighting'
-			return 'Waiting for the players to join'
+		game_status() {
+			if ( !this.game_started() && !this.game_closed() ) return this.msg_waiting_players()
+			if ( this.game().started() && !this.game_closed() ) return this.msg_fighting()
+			return this.game_leader() === $my_warclick_game_team.ally ? this.msg_ally_win() : this.msg_enemy_win()
 		}
 
-		@ $mol_mem_key
-		player_score( id : string ) {
-			return String( this.game().player_score( this.domain().person( id ) ) )
-		}
-		
 	} 
 
 }

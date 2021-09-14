@@ -1,5 +1,5 @@
-[my_warclick_red],
-[my_warclick_blue] {
+[my_warclick_ally],
+[my_warclick_enemy] {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -10,16 +10,16 @@
 	font-weight: bold;
 }
 
-[my_warclick_red],
-[my_warclick_red]:hover,
-[my_warclick_red]:focus {
-	background-color: red;
+[my_warclick_ally],
+[my_warclick_ally]:hover,
+[my_warclick_ally]:focus {
+	background-color: green;
 }
 
-[my_warclick_blue],
-[my_warclick_blue]:hover,
-[my_warclick_blue]:focus {
-	background-color: blue;
+[my_warclick_enemy],
+[my_warclick_enemy]:hover,
+[my_warclick_enemy]:focus {
+	background-color: red;
 }
 
 [my_warclick_list] {

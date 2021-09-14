@@ -1,6 +1,6 @@
 namespace $ {
 	
-	export class $my_warclick_person extends $mol_object2 {
+	export class $my_warclick_player extends $mol_object2 {
 		
 		id(): string {
 			return this.$.$mol_fail( new Error( 'id is not defined' ) )
@@ -12,15 +12,11 @@ namespace $ {
 		
 		@ $mol_mem
 		state() {
-			return this.domain().state().doc( 'person' ).doc( this.id() )
+			return this.domain().state().doc( 'player' ).doc( this.id() )
 		}
 		
 		name( next?: string ) {
 			return String( this.state().sub( 'name' ).value( next ) ?? '' )
-		}
-		
-		team( next?: 'red' | 'blue' ) {
-			return String( this.state().sub( 'team' ).value( next ) ?? 'red' )
 		}
 		
 		@ $mol_mem
