@@ -14,6 +14,8 @@ $my_warclick $mol_list
 	rows /
 		<= List $mol_row
 			sub /
+				<= Source $mol_link_source
+					uri \https://github.com/PavelZubkov/warclick
 				<= Guide $mol_view sub / <= msg_guide @ \Enter name and click join
 				<= Player_name $mol_string
 					value?val <=> name?val \

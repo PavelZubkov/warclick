@@ -7,7 +7,7 @@
 	"$my_warclick_msg_ally_win": "Союзники победили!",
 	"$my_warclick_msg_enemy_win": "Враги победили!",
 	"$my_warclick_msg_fighting": "Бой",
-	"$my_warclick_msg_guide": "Введите имя и присоединитесь",
+	"$my_warclick_msg_guide": "Введите имя и присоеденитесь",
 	"$my_warclick_msg_waiting_players": "Ждем других игроков",
 	"$my_warclick_name_hint": "Имя игрока"
 }
